@@ -9,6 +9,7 @@ class archimedes (
   Optional[Array[BindMount]] $bind_mounts,
 ) {
 
+  ensure_resource('file', '/cvmfs', {ensure => 'directory'})
   $bind_mounts.each |$mount| {
     file { $mount['dst']:
       ensure  => pick($mount['type'], 'directory'),
@@ -20,7 +21,7 @@ class archimedes (
       options => 'rw,bind',
       device  => "${mount['src']}",
       require => [
-        File[$mount['dst']],
+        [File[$mount['dst']], File['/cvmfs_ro'], File['/cvmfs']],
       ],
     }
   }
@@ -29,7 +30,7 @@ class archimedes (
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
 
   exec { 'cvmfs_config probe':
-    unless  => 'ls /cvmfs_ro/soft.computecanada.ca',
+    unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     path    => ['/usr/bin'],
     require => [Service['autofs'], Exec['init_default.local']]
   }
