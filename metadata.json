@@ -1,0 +1,13 @@
+{
+    "name": "puppet-archimedes",
+    "version": "0.1",
+    "author": "Maxime Boissonneault",
+    "summary": "Puppet code specific to Archimedes, the build platform of the Digital Research Alliance of Canada",
+    "license": "MIT",
+    "source": "https://github.com/computecanada/puppet-archimedes",
+    "project_page": "https://github.com/computecanada/puppet-archimedes",
+    "issues_url": "https://github.com/computecanada/puppet-archimedes/issues",
+    "dependencies": [ 
+        { "name":"puppetlabs/stdlib", "version_requirement": ">= 5.2.0"  }
+    ]
+}
