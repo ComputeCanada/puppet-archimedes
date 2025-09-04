@@ -36,6 +36,7 @@ class archimedes (
 
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
+  Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
 
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
