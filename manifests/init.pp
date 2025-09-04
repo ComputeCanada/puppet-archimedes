@@ -10,6 +10,14 @@ class archimedes (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
+  file { '/cvmfs/soft.computecanada.ca':
+    ensure => 'directory',
+    require => File['/cvmfs']
+  }
+  file { '/cvmfs/soft.computecanada.ca/custom':
+    ensure => 'directory',
+    require => File['/cvmfs/soft.computecanada.ca']
+  }
   $bind_mounts.each |$mount| {
     file { $mount['dst']:
       ensure  => pick($mount['type'], 'directory'),
@@ -21,7 +29,7 @@ class archimedes (
       options => 'rw,bind',
       device  => "${mount['src']}",
       require => [
-        [File[$mount['dst']], File['/cvmfs_ro'], File['/cvmfs']],
+        [File[$mount['dst']], File['/cvmfs_ro'], File['/cvmfs/soft.computecanada.ca/custom']],
       ],
     }
   }
