@@ -43,4 +43,20 @@ class archimedes (
     path    => ['/usr/bin'],
     require => [Service['autofs'], Exec['init_default.local']]
   }
+
+  # add automatic mkhomedir
+  package { 'oddjob-mkhomedir': }
+  ensure_resource('service', 'oddjobd', { 'ensure' => running, 'enable' => true })
+  file_line { 'pam_password_auth_oddjob_mkhomedir':
+    ensure => present,
+    path   => '/etc/pam.d/password-auth',
+    line   => 'session     optional      pam_oddjob_mkhomedir.so debug umask=0077',
+    notify => Service['oddjobd', 'sssd']
+  }
+  file_line { 'pam_system_auth_oddjob_mkhomedir':
+    ensure => present,
+    path   => '/etc/pam.d/system-auth',
+    line   => 'session     optional      pam_oddjob_mkhomedir.so debug umask=0077',
+    notify => Service['oddjobd', 'sssd']
+  }
 }
