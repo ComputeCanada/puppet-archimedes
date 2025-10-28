@@ -1,7 +1,8 @@
 type BindMount = Struct[{
-    'src'  => Stdlib::Unixpath,
-    'dst'  => Stdlib::Unixpath,
-    'type' => Optional[Enum['file', 'directory']],
+    'src'       => Stdlib::Unixpath,
+    'dst'       => Stdlib::Unixpath,
+    'mount_dep' => Optional[Stdlib::Unixpath],
+    'type'      => Optional[Enum['file', 'directory']],
 }]
 
 
@@ -31,6 +32,10 @@ class archimedes (
       require => [
         [File[$mount['dst']], File['/cvmfs_ro'], File['/cvmfs/soft.computecanada.ca/custom']],
       ],
+    }
+    # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
+    if ($mount['mount_dep']) {
+      Mount[$mount['mount_dep']] ~> Mount[$mount['dst']]
     }
   }
 
