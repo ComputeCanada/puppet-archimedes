@@ -36,6 +36,7 @@ class archimedes (
     # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
     if ($mount['mount_dep']) {
       Mount[$mount['mount_dep']] ~> Mount[$mount['dst']]
+      Mount[$mount['mount_dep']] -> File[$mount['dst']]
     }
   }
 
