@@ -1,6 +1,7 @@
 type BindMount = Struct[{
     'src'       => Stdlib::Unixpath,
     'dst'       => Stdlib::Unixpath,
+    'items'     => Array[String[1]],
     'mount_dep' => Optional[Stdlib::Unixpath],
     'type'      => Optional[Enum['file', 'directory']],
 }]
@@ -20,23 +21,30 @@ class archimedes (
     require => File['/cvmfs/soft.computecanada.ca']
   }
   $bind_mounts.each |$mount| {
-    file { $mount['dst']:
-      ensure  => pick($mount['type'], 'directory'),
-      require => Exec['cvmfs_config probe']
-    }
-    mount { $mount['dst']:
-      ensure  => 'mounted',
-      fstype  => 'none',
-      options => 'rw,bind',
-      device  => "${mount['src']}",
-      require => [
-        [File[$mount['dst']], File['/cvmfs_ro'], File['/cvmfs/soft.computecanada.ca/custom']],
-      ],
-    }
-    # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
-    if ($mount['mount_dep']) {
-      Mount[$mount['mount_dep']] ~> Mount[$mount['dst']]
-      Mount[$mount['mount_dep']] -> File[$mount['dst']]
+    $root_dst = $mount['dst']
+    $root_src = $mount['src']
+    $type     = pick($mount['type'], 'directory')
+    $mount['items'].each |Integer $index, String $item| {
+      $dst = "$root_dist/$item"
+      $src = "$root_src/$item"
+      file { $dst:
+        ensure  => $type,
+        require => Exec['cvmfs_config probe']
+      }
+      mount { $dst:
+        ensure  => 'mounted',
+        fstype  => 'none',
+        options => 'rw,bind',
+        device  => "$src",
+        require => [
+          [File[$dst, File['/cvmfs_ro'], File['/cvmfs/soft.computecanada.ca/custom']],
+        ],
+      }
+      # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
+      if ($mount['mount_dep']) {
+        Mount[$mount['mount_dep']] ~> Mount[$dst]
+        Mount[$mount['mount_dep']] -> File[$dst]
+      }
     }
   }
 
