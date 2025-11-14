@@ -19,6 +19,9 @@ class archimedes (
     $mount['items'].each |Integer $index, String $item| {
       $dst = "$root_dst/$item"
       $src = "$root_src/$item"
+      ensure_resource('file', $dst, {ensure =>  $type})
+      ensure_resource('file', $src, {ensure =>  $type})
+
       file { $dst:
         ensure  => $type,
         require => Exec['cvmfs_config probe']
@@ -28,7 +31,7 @@ class archimedes (
         fstype  => 'none',
         options => 'rw,bind',
         device  => "$src",
-        require => File[$dst]
+        require => [File[$dst], File[$src]],
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
       if ($mount['mount_dep']) {
