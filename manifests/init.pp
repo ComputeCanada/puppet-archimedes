@@ -28,6 +28,7 @@ class archimedes (
         fstype  => 'none',
         options => 'rw,bind',
         device  => "$src",
+        require => File[$dst]
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
       if ($mount['mount_dep']) {
