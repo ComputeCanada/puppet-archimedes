@@ -12,10 +12,6 @@ class archimedes (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  file { '/cvmfs/soft.computecanada.ca/custom':
-    ensure => 'directory',
-    require => File['/cvmfs/soft.computecanada.ca']
-  }
   $bind_mounts.each |$mount| {
     $root_dst = $mount['dst']
     $root_src = $mount['src']
@@ -32,9 +28,6 @@ class archimedes (
         fstype  => 'none',
         options => 'rw,bind',
         device  => "$src",
-        require => [
-          [File[$dst], File['/cvmfs_ro'], File['/cvmfs/soft.computecanada.ca/custom']],
-        ],
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
       if ($mount['mount_dep']) {
