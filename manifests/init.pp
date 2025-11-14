@@ -65,7 +65,7 @@ class archimedes (
   file_line { 'challenge_response':
     ensure => absent,
     path   => '/etc/ssh/sshd_config.d/50-redhat.conf',
-    line   => 'ChallengeResponseAuthentication no'
+    line   => 'ChallengeResponseAuthentication no',
     notify => Service['sshd']
   }
 }
