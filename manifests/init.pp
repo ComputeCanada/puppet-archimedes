@@ -25,7 +25,7 @@ class archimedes (
     $root_src = $mount['src']
     $type     = pick($mount['type'], 'directory')
     $mount['items'].each |Integer $index, String $item| {
-      $dst = "$root_dist/$item"
+      $dst = "$root_dst/$item"
       $src = "$root_src/$item"
       file { $dst:
         ensure  => $type,
