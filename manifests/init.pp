@@ -20,6 +20,7 @@ class archimedes (
       $dst = "$root_dst/$item"
       $src = "$root_src/$item"
 
+      ensure_resource('file', $dst, {ensure => $type})
       mount { $dst:
         ensure  => 'mounted',
         fstype  => 'none',
