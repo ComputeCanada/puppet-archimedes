@@ -20,18 +20,13 @@ class archimedes (
       $dst = "$root_dst/$item"
       $src = "$root_src/$item"
       ensure_resource('file', $dst, {ensure =>  $type})
-      ensure_resource('file', $src, {ensure =>  $type})
 
-      file { $dst:
-        ensure  => $type,
-        require => Exec['cvmfs_config probe']
-      }
       mount { $dst:
         ensure  => 'mounted',
         fstype  => 'none',
         options => 'rw,bind',
         device  => "$src",
-        require => [File[$dst], File[$src]],
+        require => [File[$dst], Exec['cvmfs_config probe']],
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
       if ($mount['mount_dep']) {
@@ -65,5 +60,12 @@ class archimedes (
     path   => '/etc/pam.d/system-auth',
     line   => 'session     optional      pam_oddjob_mkhomedir.so debug umask=0077',
     notify => Service['oddjobd', 'sssd']
+  }
+
+  file_line { 'challenge_response':
+    ensure => absent,
+    path   => '/etc/ssh/sshd_config.d/50-redhat.conf',
+    line   => 'ChallengeResponseAuthentication no'
+    notify => Service['sshd']
   }
 }
