@@ -12,10 +12,6 @@ class archimedes (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  file { '/cvmfs/soft.computecanada.ca':
-    ensure => 'directory',
-    require => File['/cvmfs']
-  }
   file { '/cvmfs/soft.computecanada.ca/custom':
     ensure => 'directory',
     require => File['/cvmfs/soft.computecanada.ca']
