@@ -8,7 +8,7 @@ type BindMount = Struct[{
 
 
 class archimedes (
-  Optional[Array[BindMount]] $bind_mounts,
+  Optional[Array[BindMount]] $bind_mounts = [],
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
