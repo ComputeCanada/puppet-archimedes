@@ -46,6 +46,7 @@ class archimedes::publisher {
     device  => '/mnt/ephemeral0/var/spool/cvmfs',
     require => [File['/mnt/ephemeral0/var/spool/cvmfs'], File['/var/spool/cvmfs']],
   }
+  Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
 }
 class archimedes::node (
   Optional[Array[BindMount]] $bind_mounts = [],
