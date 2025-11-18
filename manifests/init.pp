@@ -6,7 +6,12 @@ type BindMount = Struct[{
     'type'      => Optional[Enum['file', 'directory']],
 }]
 
-
+class archimedes::mgmt {
+  file { '/shared_tmp/logs':
+    ensure => 'directory',
+    mode   => '1777'
+  }
+}
 class archimedes (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
