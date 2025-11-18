@@ -12,7 +12,7 @@ class archimedes::mgmt {
     mode   => '1777'
   }
 }
-class archimedes (
+class archimedes::node (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
 
