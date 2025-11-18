@@ -12,7 +12,7 @@ class archimedes (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  ensure_resource('file', '/mnt/ephemeral0/tmp', {ensure => 'directory'})
+  ensure_resource('file', '/mnt/ephemeral0/tmp', {ensure => 'directory', 'mode' => '1777'})
 
   mount { '/tmp':
     ensure => 'mounted',
