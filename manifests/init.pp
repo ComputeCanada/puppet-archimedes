@@ -12,6 +12,41 @@ class archimedes::mgmt {
     mode   => '1777'
   }
 }
+class archimedes::publisher {
+  file { '/mnt/ephemeral0/var':
+    ensure => 'directory',
+    mode   => '0755',
+    owner  => 'root',
+    group  => 'root',
+  }
+  file { '/mnt/ephemeral0/var/spool':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var'],
+  }
+  file { '/mnt/ephemeral0/var/spool/cvmfs':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var/spool'],
+  }
+  file { '/var/spool/cvmfs':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+  }
+  mount { '/var/spool/cvmfs':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/ephemeral0/var/spool/cvmfs',
+    require => [File['/mnt/ephemeral0/var/spool/cvmfs'], File['/var/spool/cvmfs']],
+  }
+}
 class archimedes::node (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
@@ -43,13 +78,6 @@ class archimedes::node (
     group   => 'root',
     require => File['/mnt/ephemeral0/var'],
   }
-  file { '/mnt/ephemeral0/var/spool':
-    ensure  => 'directory',
-    mode    => '0755',
-    owner   => 'root',
-    group   => 'root',
-    require => File['/mnt/ephemeral0/var'],
-  }
   file { '/mnt/ephemeral0/var/lib/cvmfs':
     ensure  => 'directory',
     mode    => '0700',
@@ -57,26 +85,12 @@ class archimedes::node (
     group   => 'cvmfs',
     require => [File['/mnt/ephemeral0/var/lib'], User['cvmfs']],
   }
-  file { '/mnt/ephemeral0/var/spool/cvmfs':
-    ensure  => 'directory',
-    mode    => '0755',
-    owner   => 'root',
-    group   => 'root',
-    require => File['/mnt/ephemeral0/var/spool'],
-  }
   mount { '/var/lib/cvmfs':
     ensure  => 'mounted',
     fstype  => 'none',
     options => 'rw,bind',
     device  => '/mnt/ephemeral0/var/lib/cvmfs',
     require => File['/mnt/ephemeral0/var/lib/cvmfs'],
-  }
-  mount { '/var/spool/cvmfs':
-    ensure  => 'mounted',
-    fstype  => 'none',
-    options => 'rw,bind',
-    device  => '/mnt/ephemeral0/var/spool/cvmfs',
-    require => File['/mnt/ephemeral0/var/spool/cvmfs'],
   }
 
   $bind_mounts.each |$mount| {
