@@ -1,8 +1,8 @@
 type BindMount = Struct[{
-    'src'       => Stdlib::Unixpath,
-    'dst'       => Stdlib::Unixpath,
-    'items'     => Array[String[1]],
-    'mount_dep' => Optional[Stdlib::Unixpath],
+    'src'       => String,
+    'dst'       => String,
+    'items'     => Array[String],
+    'mount_dep' => Optional[String],
     'type'      => Optional[Enum['file', 'directory']],
 }]
 
@@ -12,6 +12,15 @@ class archimedes (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
+  ensure_resource('file', '/mnt/ephemeral0/tmp', {ensure => 'directory'})
+
+  mount { '/tmp':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/tmp',
+    require => File['/mnt/ephemeral0/tmp'],
+  }
   $bind_mounts.each |$mount| {
     $root_dst = $mount['dst']
     $root_src = $mount['src']
