@@ -17,8 +17,12 @@ class archimedes::node (
 ) {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  ensure_resource('file', '/mnt/ephemeral0/tmp', {ensure => 'directory', 'mode' => '1777'})
-
+  file { '/mnt/ephemeral0/tmp':
+    ensure => 'directory',
+    mode   => '1777',
+    owner  => 'root',
+    group  => 'root',
+  }
   mount { '/tmp':
     ensure => 'mounted',
     fstype => 'none',
@@ -26,6 +30,55 @@ class archimedes::node (
     device => '/mnt/ephemeral0/tmp',
     require => File['/mnt/ephemeral0/tmp'],
   }
+  file { '/mnt/ephemeral0/var':
+    ensure => 'directory',
+    mode   => '0755',
+    owner  => 'root',
+    group  => 'root',
+  }
+  file { '/mnt/ephemeral0/var/lib':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var'],
+  }
+  file { '/mnt/ephemeral0/var/spool':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var'],
+  }
+  file { '/mnt/ephemeral0/var/lib/cvmfs':
+    ensure  => 'directory',
+    mode    => '0700',
+    owner   => 'cvmfs',
+    group   => 'cvmfs',
+    require => [File['/mnt/ephemeral0/var/lib'], User['cvmfs']],
+  }
+  file { '/mnt/ephemeral0/var/spool/cvmfs':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var/spool'],
+  }
+  mount { '/var/lib/cvmfs':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/ephemeral0/var/lib/cvmfs',
+    require => File['/mnt/ephemeral0/var/lib/cvmfs'],
+  }
+  mount { '/var/spool/cvmfs':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/ephemeral0/var/spool/cvmfs',
+    require => File['/mnt/ephemeral0/var/spool/cvmfs'],
+  }
+
   $bind_mounts.each |$mount| {
     $root_dst = $mount['dst']
     $root_src = $mount['src']
