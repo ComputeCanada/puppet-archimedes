@@ -39,6 +39,18 @@ class archimedes::publisher {
     require => [File['/mnt/ephemeral0/var/spool/cvmfs'], File['/var/spool/cvmfs']],
   }
   Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
+  file_line { 'challenge_response':
+    ensure => absent,
+    path   => '/etc/ssh/sshd_config.d/50-redhat.conf',
+    line   => 'ChallengeResponseAuthentication no',
+    notify => Service['sshd']
+  }
+  wait_for { 'id libuser':
+    exit_code => 0,
+    polling_frequency => 10,
+    max_retries => 60,
+  }
+  Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
 }
 class archimedes::node {
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
@@ -77,6 +89,13 @@ class archimedes::node {
     require => [File['/mnt/ephemeral0/var/lib/cvmfs'], File['/var/lib/cvmfs']],
   }
 
+  wait_for { 'cvmfs_mounted':
+    query => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
+    exit_code => 0,
+    polling_frequency => 10,
+    max_retries => 60,
+  }
+  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes' |>
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     path    => ['/usr/bin'],
@@ -121,6 +140,7 @@ class archimedes::binds (
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
+  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes' |>
   file { '/mnt/ephemeral0/tmp':
     ensure => 'directory',
     mode   => '1777',
@@ -168,7 +188,6 @@ class archimedes::binds (
         fstype  => 'none',
         options => 'rw,bind',
         device  => "$src",
-        require => [Exec['cvmfs_config probe']],
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
       if ($mount['mount_dep']) {
