@@ -7,7 +7,7 @@ type BindMount = Struct[{
 }]
 
 class archimedes::mgmt {
-  file { '/shared_tmp/logs':
+  file { '/tmp_nfs/logs':
     ensure => 'directory',
     mode   => '1777'
   }
