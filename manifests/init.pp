@@ -1,11 +1,3 @@
-type BindMount = Struct[{
-    'src'       => String,
-    'dst'       => String,
-    'items'     => Array[String],
-    'mount_dep' => Optional[String],
-    'type'      => Optional[Enum['file', 'directory']],
-}]
-
 class archimedes::mgmt {
   file { '/tmp_nfs/logs':
     ensure => 'directory',
@@ -48,9 +40,7 @@ class archimedes::publisher {
   }
   Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
 }
-class archimedes::node (
-  Optional[Array[BindMount]] $bind_mounts = [],
-) {
+class archimedes::node {
 
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
   file { '/mnt/ephemeral0/tmp':
@@ -101,34 +91,6 @@ class archimedes::node (
     require => [File['/mnt/ephemeral0/var/lib/cvmfs'], File['/var/lib/cvmfs']],
   }
 
-  $bind_mounts.each |$mount| {
-    $root_dst = $mount['dst']
-    $root_src = $mount['src']
-    $type     = pick($mount['type'], 'directory')
-    $mount['items'].each |Integer $index, String $item| {
-      $dst = "$root_dst/$item"
-      $src = "$root_src/$item"
-
-      ensure_resource('file', $dst, {ensure => $type})
-      mount { $dst:
-        ensure  => 'mounted',
-        fstype  => 'none',
-        options => 'rw,bind',
-        device  => "$src",
-        require => [Exec['cvmfs_config probe']],
-      }
-      # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
-      if ($mount['mount_dep']) {
-        Mount[$mount['mount_dep']] ~> Mount[$dst]
-        Mount[$mount['mount_dep']] -> File[$dst]
-      }
-    }
-  }
-
-  Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
-  Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
-  Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
-
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     path    => ['/usr/bin'],
@@ -156,5 +118,45 @@ class archimedes::node (
     path   => '/etc/ssh/sshd_config.d/50-redhat.conf',
     line   => 'ChallengeResponseAuthentication no',
     notify => Service['sshd']
+  }
+}
+
+type BindMount = Struct[{
+    'src'       => String,
+    'dst'       => String,
+    'items'     => Array[String],
+    'mount_dep' => Optional[String],
+    'type'      => Optional[Enum['file', 'directory']],
+}]
+
+class archimedes::binds (
+  Optional[Array[BindMount]] $bind_mounts = [],
+) {
+  Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
+  Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
+  Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
+
+  $bind_mounts.each |$mount| {
+    $root_dst = $mount['dst']
+    $root_src = $mount['src']
+    $type     = pick($mount['type'], 'directory')
+    $mount['items'].each |Integer $index, String $item| {
+      $dst = "$root_dst/$item"
+      $src = "$root_src/$item"
+
+      ensure_resource('file', $dst, {ensure => $type})
+      mount { $dst:
+        ensure  => 'mounted',
+        fstype  => 'none',
+        options => 'rw,bind',
+        device  => "$src",
+        require => [Exec['cvmfs_config probe']],
+      }
+      # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
+      if ($mount['mount_dep']) {
+        Mount[$mount['mount_dep']] ~> Mount[$dst]
+        Mount[$mount['mount_dep']] -> File[$dst]
+      }
+    }
   }
 }
