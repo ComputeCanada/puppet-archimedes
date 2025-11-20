@@ -86,12 +86,19 @@ class archimedes::node (
     group   => 'cvmfs',
     require => [File['/mnt/ephemeral0/var/lib'], User['cvmfs']],
   }
+  file { '/var/lib/cvmfs':
+    ensure  => 'directory',
+    mode    => '0700',
+    owner   => 'cvmfs',
+    group   => 'cvmfs',
+    require => User['cvmfs'],
+  }
   mount { '/var/lib/cvmfs':
     ensure  => 'mounted',
     fstype  => 'none',
     options => 'rw,bind',
     device  => '/mnt/ephemeral0/var/lib/cvmfs',
-    require => File['/mnt/ephemeral0/var/lib/cvmfs'],
+    require => [File['/mnt/ephemeral0/var/lib/cvmfs'], File['/var/lib/cvmfs']],
   }
 
   $bind_mounts.each |$mount| {
