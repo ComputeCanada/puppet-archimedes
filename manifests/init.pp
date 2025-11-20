@@ -48,8 +48,9 @@ class archimedes::publisher {
   wait_for { 'id libuser':
     exit_code => 0,
     polling_frequency => 10,
-    max_retries => 60,
+    max_retries => 180,
   }
+  Profile::Users::Local_user<| |> -> Wait_For['id libuser']
   Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
 }
 class archimedes::node {
@@ -93,9 +94,10 @@ class archimedes::node {
     query => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     exit_code => 0,
     polling_frequency => 10,
-    max_retries => 60,
+    max_retries => 180,
   }
   Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes' |>
+  Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     path    => ['/usr/bin'],
