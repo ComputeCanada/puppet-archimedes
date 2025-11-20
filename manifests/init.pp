@@ -91,17 +91,18 @@ class archimedes::node {
   }
 
   wait_for { 'cvmfs_mounted':
-    query => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
-    exit_code => 0,
+    query             => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
+    exit_code         => 0,
     polling_frequency => 10,
-    max_retries => 180,
+    max_retries       => 180,
+    require           => [Service['autofs'], Service['consul-template'], Exec['init_default.local']],
   }
   Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes' |>
   Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     path    => ['/usr/bin'],
-    require => [Service['autofs'], Exec['init_default.local']]
+    require => [Service['autofs'], Exec['init_default.local'], Service['consul-template']]
   }
 
   # add automatic mkhomedir
