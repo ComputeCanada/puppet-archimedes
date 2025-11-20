@@ -136,12 +136,30 @@ type BindMount = Struct[{
     'type'      => Optional[Enum['file', 'directory']],
 }]
 
+class archimedes::base {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  wait_for { 'ipa_https_first':
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
+    exit_code         => 0,
+    polling_frequency => 5,
+    max_retries       => 200,
+    refreshonly       => true,
+    subscribe         => [
+      Package['ipa-client'],
+      Exec['ipa-client-uninstall_bad-hostname'],
+      Exec['ipa-client-uninstall_bad-server'],
+    ],
+    before           => Wait_For['ipa_https']
+  }
+}
+
 class archimedes::binds (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
+
   Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes' |>
   file { '/mnt/ephemeral0/tmp':
     ensure => 'directory',
