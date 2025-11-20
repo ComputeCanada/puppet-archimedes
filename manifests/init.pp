@@ -139,7 +139,7 @@ type BindMount = Struct[{
 class archimedes::base {
   $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
   wait_for { 'ipa_https_first':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet DNS:ipa.${ipa_domain}",
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet ipa.${ipa_domain}",
     exit_code         => 0,
     polling_frequency => 5,
     max_retries       => 200,
