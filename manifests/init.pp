@@ -41,21 +41,7 @@ class archimedes::publisher {
   Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
 }
 class archimedes::node {
-
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  file { '/mnt/ephemeral0/tmp':
-    ensure => 'directory',
-    mode   => '1777',
-    owner  => 'root',
-    group  => 'root',
-  }
-  mount { '/tmp':
-    ensure => 'mounted',
-    fstype => 'none',
-    options => 'rw,bind',
-    device => '/mnt/ephemeral0/tmp',
-    require => File['/mnt/ephemeral0/tmp'],
-  }
   file { '/mnt/ephemeral0/var':
     ensure => 'directory',
     mode   => '0755',
@@ -135,6 +121,38 @@ class archimedes::binds (
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
+  file { '/mnt/ephemeral0/tmp':
+    ensure => 'directory',
+    mode   => '1777',
+    owner  => 'root',
+    group  => 'root',
+  }
+  mount { '/tmp':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/tmp',
+    require => File['/mnt/ephemeral0/tmp'],
+  }
+  file { '/mnt/ephemeral0/bwrap':
+    ensure => 'directory',
+    mode   => '1777',
+    owner  => 'root',
+    group  => 'root',
+  }
+  file { '/bwrap':
+    ensure => 'directory',
+    mode   => '1777',
+    owner  => 'root',
+    group  => 'root',
+  }
+  mount { '/bwrap':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/bwrap',
+    require => [File['/mnt/ephemeral0/tmp'],File['/bwrap']]
+  }
 
   $bind_mounts.each |$mount| {
     $root_dst = $mount['dst']
