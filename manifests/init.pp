@@ -77,12 +77,6 @@ class archimedes::squid {
     group   => 'root',
     require => File['/mnt/ephemeral0/var/spool'],
   }
-  file { '/var/spool/squid':
-    ensure  => 'directory',
-    mode    => '0750',
-    owner   => 'root',
-    group   => 'root',
-  }
   mount { '/var/spool/squid':
     ensure  => 'mounted',
     fstype  => 'none',
