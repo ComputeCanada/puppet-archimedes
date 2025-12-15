@@ -41,6 +41,7 @@ class archimedes::base_mounts {
     owner   => 'sssd',
     group   => 'sssd',
     require => File['/mnt/ephemeral0/var/log'],
+    notify  => Service['sssd'],
   }
   file { '/mnt/ephemeral0/var/lib':
     ensure  => 'directory',
@@ -91,6 +92,7 @@ class archimedes::squid {
     owner   => 'squid',
     group   => 'squid',
     require => File['/mnt/ephemeral0/var/log'],
+    notify  => Service['squid'],
   }
   mount { '/var/spool/squid':
     ensure  => 'mounted',
@@ -98,6 +100,7 @@ class archimedes::squid {
     options => 'rw,bind',
     device  => '/mnt/ephemeral0/var/spool/squid',
     require => [File['/mnt/ephemeral0/var/spool/squid'], File['/var/spool/squid']],
+    notify  => Service['squid'],
   }
 }
 class archimedes::publisher {
