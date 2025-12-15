@@ -1,10 +1,19 @@
-class archimedes::mgmt {
-  file { '/tmp_nfs/logs':
-    ensure => 'directory',
-    mode   => '1777'
+class archimedes::base {
+  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
+  wait_for { 'ipa_https_first':
+    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet ipa.${ipa_domain}",
+    exit_code         => 0,
+    polling_frequency => 5,
+    max_retries       => 200,
+    refreshonly       => true,
+    subscribe         => [
+      Package['ipa-client'],
+      Exec['ipa-client-uninstall_bad-hostname'],
+      Exec['ipa-client-uninstall_bad-server'],
+    ],
+    before           => Wait_For['ipa_https']
   }
-}
-class archimedes::publisher {
+
   file { '/mnt/ephemeral0/var':
     ensure => 'directory',
     mode   => '0755',
@@ -18,6 +27,72 @@ class archimedes::publisher {
     group   => 'root',
     require => File['/mnt/ephemeral0/var'],
   }
+  file { '/mnt/ephemeral0/var/log':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var'],
+  }
+  file { '/mnt/ephemeral0/var/lib':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var'],
+  }
+  file { '/mnt/ephemeral0/tmp':
+    ensure => 'directory',
+    mode   => '1777',
+    owner  => 'root',
+    group  => 'root',
+  }
+  mount { '/tmp':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/tmp',
+    require => File['/mnt/ephemeral0/tmp'],
+  }
+  mount { '/var/log':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/var/log',
+    require => File['/mnt/ephemeral0/var/log'],
+  }
+}
+class archimedes::mgmt {
+  include archimedes::base
+  file { '/tmp_nfs/logs':
+    ensure => 'directory',
+    mode   => '1777'
+  }
+}
+class archimedes::squid {
+  file { '/mnt/ephemeral0/var/spool/squid':
+    ensure  => 'directory',
+    mode    => '0750',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var/spool'],
+  }
+  file { '/var/spool/squid':
+    ensure  => 'directory',
+    mode    => '0750',
+    owner   => 'root',
+    group   => 'root',
+  }
+  mount { '/var/spool/squid':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/ephemeral0/var/spool/squid',
+    require => [File['/mnt/ephemeral0/var/spool/squid'], File['/var/spool/squid']],
+  }
+}
+class archimedes::publisher {
+  include archimedes::base
   file { '/mnt/ephemeral0/var/spool/cvmfs':
     ensure  => 'directory',
     mode    => '0755',
@@ -55,19 +130,7 @@ class archimedes::publisher {
 }
 class archimedes::node {
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  file { '/mnt/ephemeral0/var':
-    ensure => 'directory',
-    mode   => '0755',
-    owner  => 'root',
-    group  => 'root',
-  }
-  file { '/mnt/ephemeral0/var/lib':
-    ensure  => 'directory',
-    mode    => '0755',
-    owner   => 'root',
-    group   => 'root',
-    require => File['/mnt/ephemeral0/var'],
-  }
+  include archimedes::base
   file { '/mnt/ephemeral0/var/lib/cvmfs':
     ensure  => 'directory',
     mode    => '0700',
@@ -137,23 +200,6 @@ type BindMount = Struct[{
     'type'      => Optional[Enum['file', 'directory']],
 }]
 
-class archimedes::base {
-  $ipa_domain = lookup('profile::freeipa::base::ipa_domain')
-  wait_for { 'ipa_https_first':
-    query             => "openssl s_client -showcerts -connect ipa:443 </dev/null 2> /dev/null | openssl x509 -noout -text | grep --quiet ipa.${ipa_domain}",
-    exit_code         => 0,
-    polling_frequency => 5,
-    max_retries       => 200,
-    refreshonly       => true,
-    subscribe         => [
-      Package['ipa-client'],
-      Exec['ipa-client-uninstall_bad-hostname'],
-      Exec['ipa-client-uninstall_bad-server'],
-    ],
-    before           => Wait_For['ipa_https']
-  }
-}
-
 class archimedes::binds (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
@@ -162,19 +208,6 @@ class archimedes::binds (
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
 
   Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes' |>
-  file { '/mnt/ephemeral0/tmp':
-    ensure => 'directory',
-    mode   => '1777',
-    owner  => 'root',
-    group  => 'root',
-  }
-  mount { '/tmp':
-    ensure => 'mounted',
-    fstype => 'none',
-    options => 'rw,bind',
-    device => '/mnt/ephemeral0/tmp',
-    require => File['/mnt/ephemeral0/tmp'],
-  }
   file { '/mnt/ephemeral0/bwrap':
     ensure => 'directory',
     mode   => '1777',
