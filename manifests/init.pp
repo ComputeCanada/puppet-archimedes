@@ -13,7 +13,8 @@ class archimedes::base {
     ],
     before           => Wait_For['ipa_https']
   }
-
+}
+class archimedes::base_mounts {
   file { '/mnt/ephemeral0/var':
     ensure => 'directory',
     mode   => '0755',
@@ -63,7 +64,7 @@ class archimedes::base {
   }
 }
 class archimedes::mgmt {
-  include archimedes::base
+  include archimedes::base_mounts
   file { '/tmp_nfs/logs':
     ensure => 'directory',
     mode   => '1777'
@@ -86,7 +87,7 @@ class archimedes::squid {
   }
 }
 class archimedes::publisher {
-  include archimedes::base
+  include archimedes::base_mounts
   file { '/mnt/ephemeral0/var/spool/cvmfs':
     ensure  => 'directory',
     mode    => '0755',
@@ -124,7 +125,7 @@ class archimedes::publisher {
 }
 class archimedes::node {
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  include archimedes::base
+  include archimedes::base_mounts
   file { '/mnt/ephemeral0/var/lib/cvmfs':
     ensure  => 'directory',
     mode    => '0700',
