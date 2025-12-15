@@ -35,6 +35,13 @@ class archimedes::base_mounts {
     group   => 'root',
     require => File['/mnt/ephemeral0/var'],
   }
+  file { '/mnt/ephemeral0/var/log/sssd':
+    ensure  => 'directory',
+    mode    => '0750',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var/log'],
+  }
   file { '/mnt/ephemeral0/var/lib':
     ensure  => 'directory',
     mode    => '0755',
