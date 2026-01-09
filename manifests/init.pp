@@ -15,11 +15,22 @@ class archimedes::base {
   }
 }
 class archimedes::base_mounts {
+  mount { '/mnt/ephemeral0':
+    ensure => 'mounted',
+  }
   file { '/mnt/ephemeral0/var':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'root',
+    group   => 'root',
+    require => Mount['/mnt/ephemeral0']
+  }
+  file { '/mnt/ephemeral0/cvmfs':
     ensure => 'directory',
     mode   => '0755',
     owner  => 'root',
     group  => 'root',
+    require => Mount['/mnt/ephemeral0']
   }
   file { '/mnt/ephemeral0/var/spool':
     ensure  => 'directory',
@@ -55,6 +66,7 @@ class archimedes::base_mounts {
     mode   => '1777',
     owner  => 'root',
     group  => 'root',
+    require => Mount['/mnt/ephemeral0']
   }
   mount { '/tmp':
     ensure => 'mounted',
@@ -124,6 +136,13 @@ class archimedes::publisher {
     options => 'rw,bind',
     device  => '/mnt/ephemeral0/var/spool/cvmfs',
     require => [File['/mnt/ephemeral0/var/spool/cvmfs'], File['/var/spool/cvmfs']],
+  }
+  mount { '/cvmfs':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/ephemeral0/cvmfs',
+    require => [File['/mnt/ephemeral0/cvmfs'], Package['cvmfs']],
   }
   Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
   file_line { 'challenge_response':
