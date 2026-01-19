@@ -15,6 +15,8 @@ class archimedes::base {
   }
 }
 class archimedes::base_mounts {
+  Mount<| tag == 'archimedes::base_mounts' |> -> Service<| |>
+  Mount<| tag == 'archimedes::base_mounts' |> -> Package<| |>
   mount { '/mnt/ephemeral0':
     ensure => 'mounted',
   }
@@ -91,6 +93,7 @@ class archimedes::mgmt {
   }
 }
 class archimedes::squid {
+  Mount<| tag == 'archimedes::squid' |> -> Service<| |>
   file { '/mnt/ephemeral0/var/spool/squid':
     ensure  => 'directory',
     mode    => '0750',
@@ -144,7 +147,7 @@ class archimedes::publisher {
     device  => '/mnt/ephemeral0/cvmfs',
     require => [File['/mnt/ephemeral0/cvmfs'], Package['cvmfs']],
   }
-  Mount<| tag == 'archimedes' |> -> File<| tag == 'cvmfs_publisher' |>
+  Mount<| tag == 'archimedes::publisher' |> -> File<| tag == 'cvmfs_publisher' |>
   file_line { 'challenge_response':
     ensure => absent,
     path   => '/etc/ssh/sshd_config.d/50-redhat.conf',
@@ -191,7 +194,6 @@ class archimedes::node {
     max_retries       => 180,
     require           => [Service['autofs'], Service['consul-template'], Exec['init_default.local']],
   }
-  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes' |>
   Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
   exec { 'cvmfs_config probe':
     unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
@@ -234,11 +236,11 @@ type BindMount = Struct[{
 class archimedes::binds (
   Optional[Array[BindMount]] $bind_mounts = [],
 ) {
-  Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes' |>
-  Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes' |>
+  Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes::binds' |>
+  Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes::binds' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
 
-  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes' |>
+  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes::binds' |>
   file { '/mnt/ephemeral0/bwrap':
     ensure => 'directory',
     mode   => '1777',
