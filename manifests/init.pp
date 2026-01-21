@@ -97,8 +97,8 @@ class archimedes::squid {
   file { '/mnt/ephemeral0/var/spool/squid':
     ensure  => 'directory',
     mode    => '0750',
-    owner   => 'root',
-    group   => 'root',
+    owner   => 'squid',
+    group   => 'squid',
     require => File['/mnt/ephemeral0/var/spool'],
   }
   file { '/mnt/ephemeral0/var/log/squid':
