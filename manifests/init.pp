@@ -83,12 +83,18 @@ class archimedes::mgmt {
     group   => 'root',
     require => File['/mnt/ephemeral0/var/log'],
   }
+  file { '/var/log/instances':
+    ensure  => 'directory',
+    mode    => '0700',
+    owner   => 'root',
+    group   => 'root',
+  }
   mount { '/var/log/instances':
     ensure => 'mounted',
     fstype => 'none',
     options => 'rw,bind',
     device => '/mnt/ephemeral0/var/log/instances',
-    require => File['/mnt/ephemeral0/var/log/instances'],
+    require => [File['/var/log/instances'], File['/mnt/ephemeral0/var/log/instances']],
     notify => Service['rsyslog']
   }
 }
