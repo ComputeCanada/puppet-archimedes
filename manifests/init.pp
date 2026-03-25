@@ -48,23 +48,6 @@ class archimedes::base_mounts {
     group   => 'root',
     require => File['/mnt/ephemeral0/var'],
   }
-  file { '/mnt/ephemeral0/var/log/sssd':
-    ensure  => 'directory',
-    mode    => '0750',
-    owner   => 'sssd',
-    group   => 'sssd',
-    require => File['/mnt/ephemeral0/var/log'],
-    notify  => Service['sssd'],
-  }
-  file { '/mnt/ephemeral0/var/log/munge':
-    ensure  => 'directory',
-    mode    => '0700',
-    owner   => 'munge',
-    group   => 'munge',
-    require => File['/mnt/ephemeral0/var/log'],
-    notify  => Service['munge'],
-  }
-
   file { '/mnt/ephemeral0/var/lib':
     ensure  => 'directory',
     mode    => '0755',
@@ -86,19 +69,27 @@ class archimedes::base_mounts {
     device => '/mnt/ephemeral0/tmp',
     require => File['/mnt/ephemeral0/tmp'],
   }
-  mount { '/var/log':
-    ensure => 'mounted',
-    fstype => 'none',
-    options => 'rw,bind',
-    device => '/mnt/ephemeral0/var/log',
-    require => File['/mnt/ephemeral0/var/log'],
-  }
 }
 class archimedes::mgmt {
   include archimedes::base_mounts
   file { '/tmp_nfs/logs':
     ensure => 'directory',
     mode   => '1777'
+  }
+  file { '/mnt/ephemeral0/var/log/instances':
+    ensure  => 'directory',
+    mode    => '0700',
+    owner   => 'root',
+    group   => 'root',
+    require => File['/mnt/ephemeral0/var/log'],
+  }
+  mount { '/var/log/instances':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/var/log/instances',
+    require => File['/mnt/ephemeral0/var/log/instances'],
+    notify => Service['rsyslog']
   }
 }
 class archimedes::squid {
@@ -116,6 +107,14 @@ class archimedes::squid {
     owner   => 'squid',
     group   => 'squid',
     require => File['/mnt/ephemeral0/var/log'],
+    notify  => Service['squid'],
+  }
+  mount { '/var/log/squid':
+    ensure => 'mounted',
+    fstype => 'none',
+    options => 'rw,bind',
+    device => '/mnt/ephemeral0/var/log/squid',
+    require => File['/mnt/ephemeral0/var/log/squid'],
     notify  => Service['squid'],
   }
   mount { '/var/spool/squid':
