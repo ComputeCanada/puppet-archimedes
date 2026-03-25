@@ -215,6 +215,10 @@ class archimedes::node {
     require => [Service['autofs'], Exec['init_default.local'], Service['consul-template']]
   }
 
+  # just ensure that Augeas and those ssh configs are after all binds so they are very late in the run
+  Mount<| tag == 'archimedes::binds' |> -> Augeas<| tag == duo_unix |>
+  Mount<| tag == 'archimedes::binds' |> -> File_line<| tag == 'archimedes::node' |>
+
   # add automatic mkhomedir
   package { 'oddjob-mkhomedir': }
   ensure_resource('service', 'oddjobd', { 'ensure' => running, 'enable' => true })
@@ -253,8 +257,9 @@ class archimedes::binds (
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes::binds' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes::binds' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
-
+  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
   Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes::binds' |>
+
   file { '/mnt/ephemeral0/bwrap':
     ensure => 'directory',
     mode   => '1777',
