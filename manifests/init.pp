@@ -177,6 +177,8 @@ class archimedes::publisher {
   Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
 }
 class archimedes::node {
+  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
+  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes::binds' |>
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
   include archimedes::base_mounts
   file { '/mnt/ephemeral0/var/lib/cvmfs':
@@ -257,8 +259,6 @@ class archimedes::binds (
   Profile::Ceph::Client::Share<| |> -> File<| tag == 'archimedes::binds' |>
   Profile::Ceph::Client::Share<| |> -> Mount<| tag == 'archimedes::binds' |>
   Profile::Ceph::Client::Share<| |> -> User<| tag == 'cvmfs' |>
-  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
-  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes::binds' |>
 
   file { '/mnt/ephemeral0/bwrap':
     ensure => 'directory',
