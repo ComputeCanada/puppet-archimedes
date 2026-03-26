@@ -292,7 +292,7 @@ class archimedes::binds (
       mount { $dst:
         ensure  => 'mounted',
         fstype  => 'none',
-        options => 'rw,bind',
+        options => 'rw,bind,_netdev',
         device  => "$src",
       }
       # ensure that if a mount dependency is specified, if the dependency is remounted, the target will be remounted
