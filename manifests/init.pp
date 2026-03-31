@@ -303,3 +303,22 @@ class archimedes::binds (
     }
   }
 }
+
+class archimedes::metrix {
+  package { 'httpd':
+    ensure => present
+  }
+  service { 'httpd':
+    require => Package['httpd'],
+    ensure  => running,
+    enable  => true,
+    restart => '/usr/bin/systemctl reload httpd',
+  }
+  file { '/var/www/':
+    ensure => 'directory',
+    owner => 'root',
+    group => 'root',
+    mode  => '0755',
+    before => Class['metrix']
+  }
+}
