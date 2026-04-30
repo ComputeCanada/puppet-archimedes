@@ -69,6 +69,17 @@ class archimedes::base_mounts {
     device => '/mnt/ephemeral0/tmp',
     require => File['/mnt/ephemeral0/tmp'],
   }
+  file { '/sbin/copyfail-ebpf-mitigation':
+    ensure   => present,
+    source   => 'https://object-arbutus.alliancecan.ca/swift/v1/1adccedf245c42bfb1efada1f17686af/copyfail-ebpf-mitigation/copyfail-ebpf-mitigation',
+    mode     => '0700',
+    checksum => 'md5',
+    checksum_value => '77186f0b787b75051df0f1dce0e8693e',
+  }
+  exec { '/sbin/copyfail-ebpf-mitigation':
+    creates => '/sys/fs/bpf/copyfail-ebpf-mitigation/deny_socket_bind',
+    require => File['/sbin/copyfail-ebpf-mitigation'],
+  }
 }
 class archimedes::mgmt {
   include archimedes::base_mounts
