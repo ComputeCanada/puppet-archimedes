@@ -24,6 +24,9 @@ class archimedes::base {
     creates => '/sys/fs/bpf/copyfail-ebpf-mitigation/deny_socket_bind',
     require => File['/sbin/copyfail-ebpf-mitigation'],
   }
+  kmod::install { 'esp6': command => '/bin/false' }
+  kmod::install { 'esp4': command => '/bin/false' }
+  kmod::install { 'rxrpc': command => '/bin/false' }
 }
 class archimedes::base_mounts {
   Mount<| tag == 'archimedes::base_mounts' |> -> Service<| |>
