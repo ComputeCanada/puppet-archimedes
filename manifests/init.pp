@@ -112,13 +112,29 @@ class archimedes::mgmt {
     notify => Service['rsyslog']
   }
 
+  file { '/mnt/lv/database/mysql':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'mysql',
+    group   => 'mysql',
+    require => [Package['mysql-server'], Mount['/mnt/lv/database']],
+  }
+
+  file { '/var/lib/mysql':
+    ensure  => 'directory',
+    mode    => '0755',
+    owner   => 'mysql',
+    group   => 'mysql',
+    require => Package['mysql-server'],
+  }
+
   mount { '/var/lib/mysql':
     ensure  => 'mounted',
     fstype  => 'none',
     options => 'rw,bind',
-    device  => '/mnt/lv/database',
-    require => Mount['/mnt/lv/database'],
-    before  => Package['mysql-server'],
+    device  => '/mnt/lv/database/mysql',
+    require => File['/mnt/lv/database/mysql'],
+    before  => Mysql_datadir['/var/lib/mysql'],
   }
 }
 class archimedes::squid {
