@@ -111,6 +111,15 @@ class archimedes::mgmt {
     require => [File['/var/log/instances'], File['/mnt/ephemeral0/var/log/instances']],
     notify => Service['rsyslog']
   }
+
+  mount { '/var/lib/mysql':
+    ensure  => 'mounted',
+    fstype  => 'none',
+    options => 'rw,bind',
+    device  => '/mnt/lv/database',
+    require => Mount['/mnt/lv/database'],
+    before  => Package['mariadb'],
+  }
 }
 class archimedes::squid {
   Mount<| tag == 'archimedes::squid' |> -> Service<| |>
