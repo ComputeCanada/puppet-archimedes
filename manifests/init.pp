@@ -118,7 +118,7 @@ class archimedes::mgmt {
     options => 'rw,bind',
     device  => '/mnt/lv/database',
     require => Mount['/mnt/lv/database'],
-    before  => Package['mariadb'],
+    before  => Package['mysql-server'],
   }
 }
 class archimedes::squid {
