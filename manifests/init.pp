@@ -208,9 +208,10 @@ class archimedes::publisher {
     notify => Service['sshd']
   }
   wait_for { 'id libuser':
-    exit_code => 0,
+    query             => 'id libuser',
+    exit_code         => 0,
     polling_frequency => 10,
-    max_retries => 180,
+    max_retries       => 180,
   }
   Profile::Users::Local_user<| |> -> Wait_For['id libuser']
   Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
@@ -344,20 +345,4 @@ class archimedes::binds (
 }
 
 class archimedes::metrix {
-  package { 'httpd':
-    ensure => present
-  }
-  service { 'httpd':
-    require => Package['httpd'],
-    ensure  => running,
-    enable  => true,
-    restart => '/usr/bin/systemctl reload httpd',
-  }
-  file { '/var/www/':
-    ensure => 'directory',
-    owner => 'root',
-    group => 'root',
-    mode  => '0755',
-    before => Class['metrix']
-  }
 }
