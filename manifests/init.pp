@@ -13,20 +13,6 @@ class archimedes::base {
     ],
     before           => Wait_For['ipa_https']
   }
-  file { '/sbin/copyfail-ebpf-mitigation':
-    ensure   => present,
-    source   => 'https://object-arbutus.alliancecan.ca/swift/v1/1adccedf245c42bfb1efada1f17686af/copyfail-ebpf-mitigation/copyfail-ebpf-mitigation',
-    mode     => '0700',
-    checksum => 'md5',
-    checksum_value => '77186f0b787b75051df0f1dce0e8693e',
-  }
-  exec { '/sbin/copyfail-ebpf-mitigation':
-    creates => '/sys/fs/bpf/copyfail-ebpf-mitigation/deny_socket_bind',
-    require => File['/sbin/copyfail-ebpf-mitigation'],
-  }
-  kmod::install { 'esp6': command => '/bin/false' }
-  kmod::install { 'esp4': command => '/bin/false' }
-  kmod::install { 'rxrpc': command => '/bin/false' }
 }
 class archimedes::base_mounts {
   Mount<| tag == 'archimedes::base_mounts' |> -> Service<| |>
@@ -207,19 +193,36 @@ class archimedes::publisher {
     line   => 'ChallengeResponseAuthentication no',
     notify => Service['sshd']
   }
-  wait_for { 'id libuser':
-    query             => 'id libuser',
+#  wait_for { 'id libuser':
+#    query             => 'id libuser',
+#    exit_code         => 0,
+#    polling_frequency => 10,
+#    max_retries       => 180,
+#  }
+#  Profile::Users::Local_user<| |> -> Wait_For['id libuser']
+#  Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
+}
+class archimedes::node {
+  Exec<| tag == 'profile::nfs::client' |> -> Mount<| tag == 'profile::cvmfs::client' |>
+  Mount<| tag == 'profile::cvmfs::client' |> -> Mount<| tag == 'archimedes::binds' |>
+  Mount<| tag == 'profile::ceph::client' |> -> Mount<| tag == 'archimedes::binds' |>
+  Mount<| tag == 'profile::cvmfs::client' |> -> Wait_For['cvmfs_mounted']
+  Mount<| tag == 'profile::cvmfs::client' |> -> Exec['cvmfs_config probe']
+  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
+  ensure_resource('file', '/cvmfs', {ensure => 'directory'})
+  wait_for { 'cvmfs_mounted':
+    query             => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
     exit_code         => 0,
     polling_frequency => 10,
     max_retries       => 180,
+    require           => [Service['autofs'], Service['consul-template']],
   }
-  Profile::Users::Local_user<| |> -> Wait_For['id libuser']
-  Wait_For['id libuser'] -> Cvmfs_publisher::Repository<| |>
-}
-class archimedes::node {
-  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
-  Exec<| tag == 'cvmfs' |> -> Mount<| tag == 'archimedes::binds' |>
-  ensure_resource('file', '/cvmfs', {ensure => 'directory'})
+  Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
+  exec { 'cvmfs_config probe':
+    unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
+    path    => ['/usr/bin'],
+    require => [Service['autofs'], Service['consul-template']]
+  }
   include archimedes::base_mounts
   file { '/mnt/ephemeral0/var/lib/cvmfs':
     ensure  => 'directory',
@@ -241,20 +244,6 @@ class archimedes::node {
     options => 'rw,bind',
     device  => '/mnt/ephemeral0/var/lib/cvmfs',
     require => [File['/mnt/ephemeral0/var/lib/cvmfs'], File['/var/lib/cvmfs']],
-  }
-
-  wait_for { 'cvmfs_mounted':
-    query             => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
-    exit_code         => 0,
-    polling_frequency => 10,
-    max_retries       => 180,
-    require           => [Service['autofs'], Service['consul-template'], Exec['init_default.local']],
-  }
-  Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
-  exec { 'cvmfs_config probe':
-    unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
-    path    => ['/usr/bin'],
-    require => [Service['autofs'], Exec['init_default.local'], Service['consul-template']]
   }
 
   # just ensure that Augeas and those ssh configs are after all binds so they are very late in the run
