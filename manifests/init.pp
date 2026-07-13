@@ -206,23 +206,7 @@ class archimedes::node {
   Exec<| tag == 'profile::nfs::client' |> -> Mount<| tag == 'profile::cvmfs::client' |>
   Mount<| tag == 'profile::cvmfs::client' |> -> Mount<| tag == 'archimedes::binds' |>
   Mount<| tag == 'profile::ceph::client' |> -> Mount<| tag == 'archimedes::binds' |>
-  Mount<| tag == 'profile::cvmfs::client' |> -> Wait_For['cvmfs_mounted']
-  Mount<| tag == 'profile::cvmfs::client' |> -> Exec['cvmfs_config probe']
-  Wait_For['cvmfs_mounted'] -> Mount<| tag == 'archimedes::binds' |>
   ensure_resource('file', '/cvmfs', {ensure => 'directory'})
-  wait_for { 'cvmfs_mounted':
-    query             => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
-    exit_code         => 0,
-    polling_frequency => 10,
-    max_retries       => 180,
-    require           => [Service['autofs'], Service['consul-template']],
-  }
-  Profile::Users::Local_user<| |> -> Wait_For['cvmfs_mounted']
-  exec { 'cvmfs_config probe':
-    unless  => 'ls /cvmfs_ro/{soft.computecanada.ca,soft-dev.computecanada.ca,public.data.computecanada.ca,restricted.computecanada.ca}',
-    path    => ['/usr/bin'],
-    require => [Service['autofs'], Service['consul-template']]
-  }
   include archimedes::base_mounts
   file { '/mnt/ephemeral0/var/lib/cvmfs':
     ensure  => 'directory',
