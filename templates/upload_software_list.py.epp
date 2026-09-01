@@ -1,0 +1,49 @@
+#!<%= $prefix %>/bin/python3
+
+import os
+import subprocess
+import gitlab
+from gitlab.exceptions import GitlabGetError
+
+# 1. Authenticate with your GitLab instance
+gl = gitlab.Gitlab('<%= $gitlab_url %>', private_token='<%= $token %>')
+project = gl.projects.get('<%= $repository %>')
+
+# Define your file details
+hostname = '<%= $hostname %>'
+file_path = f'<%= $path %>/{hostname}.txt'
+target_branch = 'main'
+
+# get rpm -qa
+result = subprocess.run(["rpm", "-qa"], capture_output=True, text=True)
+output_string = result.stdout
+new_content = '\n'.join([s for s in sorted(output_string.split('\n')) if s])
+
+file_data = {
+    'file_path': file_path,
+    'branch': target_branch,
+    'content': new_content,
+    'commit_message': f'Updating list of software for {hostname}'
+}
+
+try:
+    # 2. Attempt to fetch the existing file from the repository
+    existing_file = project.files.get(file_path=file_path, ref=target_branch)
+
+    # 3. Decode the remote content (GitLab returns base64 bytes, decode to string)
+    remote_content = existing_file.decode().decode('utf-8')
+
+    # 4. Check if anything actually changed
+    if remote_content == new_content:
+        print(f"No changes detected for {file_path}. Skipping update.")
+    else:
+        project.files.update(file_path, file_data)
+        print(f"Successfully updated: {file_path}")
+
+except GitlabGetError as e:
+    # 5. Handle the file if it does not exist yet (GitLab returns a 404)
+    if e.response_code == 404:
+        project.files.create(file_data)
+        print(f"Successfully created (new file): {file_path}")
+    else:
+        raise e
