@@ -321,3 +321,126 @@ class archimedes::binds (
 
 class archimedes::metrix {
 }
+
+class archimedes::danttunnel (
+  String $private_key_content,
+  String $hostname,
+  String $remote_user,
+  String $local_forward_ip,
+  String $tunnel_user = 'tunnel',
+) {
+
+  # Ensure the local user exists with a home directory
+  user { $tunnel_user:
+    ensure     => present,
+    home       => "/home/${tunnel_user}",
+    managehome => true,
+    shell      => '/bin/bash',
+  }
+
+  # Secure the user's home directory
+  file { "/home/${tunnel_user}":
+    ensure  => directory,
+    mode    => '0700',
+    owner   => $tunnel_user,
+    group   => $tunnel_user,
+    require => User[$tunnel_user],
+  }
+
+  # Create the hidden .ssh directory
+  file { "/home/${tunnel_user}/.ssh":
+    ensure  => directory,
+    mode    => '0700',
+    owner   => $tunnel_user,
+    group   => $tunnel_user,
+    require => File["/home/${tunnel_user}"],
+  }
+
+  # Create the nested keys directory
+  file { "/home/${tunnel_user}/.ssh/keys":
+    ensure  => directory,
+    mode    => '0700',
+    owner   => $tunnel_user,
+    group   => $tunnel_user,
+    require => File["/home/${tunnel_user}/.ssh"],
+  }
+
+  # Deploy the private key file at the custom path
+  file { "/home/${tunnel_user}/.ssh/keys/db.dant":
+    ensure    => file,
+    mode      => '0600',
+    owner     => $tunnel_user,
+    group     => $tunnel_user,
+    content   => $private_key_content,
+    show_diff => false, # Prevents private key data from appearing in Puppet change logs
+    require   => File["/home/${tunnel_user}/.ssh/keys"],
+    before    => Service['danttunnel@db.dant'],
+  }
+
+  # Deploy the SSH configuration file
+  file { "/home/${tunnel_user}/.ssh/config":
+    ensure  => file,
+    mode    => '0600',
+    owner   => $tunnel_user,
+    group   => $tunnel_user,
+    content => @("EOF"),
+      Host db.dant
+         HostName ${hostname}
+         User ${remote_user}
+         IdentityFile ~/.ssh/keys/db.dant
+         # localhost:localport remotehost:remoteport
+         LocalForward ${local_forward_ip}:5432 127.0.0.1:5432
+         ServerAliveInterval 60
+         ExitOnForwardFailure yes
+         StrictHostKeyChecking accept-new
+      | EOF
+    require => File["/home/${tunnel_user}/.ssh"],
+    before  => Service['danttunnel@db.dant'],
+  }
+
+  # Deploy the template systemd template configuration file
+  file { '/etc/systemd/system/danttunnel@.service':
+    ensure  => file,
+    mode    => '0644',
+    owner   => 'root',
+    group   => 'root',
+    content => @("EOF"),
+      [Unit]
+      Description=Setup a secure tunnel to %I
+      After=network.target
+
+      [Service]
+      User=${tunnel_user}
+      Group=${tunnel_user}
+
+      # Allow binding to ports below 1024 if needed
+      AmbientCapabilities=CAP_NET_BIND_SERVICE
+
+      ExecStart=/usr/bin/ssh -F /home/${tunnel_user}/.ssh/config -NT %i
+
+      RestartSec=5
+      Restart=always
+
+      [Install]
+      WantedBy=multi-user.target
+      | EOF
+    notify  => Exec['danttunnel-systemd-reload'],
+  }
+
+  # Ensure systemd structural mutations register immediately
+  exec { 'danttunnel-systemd-reload':
+    command     => '/usr/bin/systemctl daemon-reload',
+    refreshonly => true,
+    before      => Service['danttunnel@db.dant'],
+  }
+
+  # Enforce runtime tracking for the target connection instance
+  service { 'danttunnel@db.dant':
+    ensure    => running,
+    enable    => true,
+    subscribe => [
+      File['/etc/systemd/system/danttunnel@.service'],
+      File["/home/${tunnel_user}/.ssh/config"]
+    ],
+  }
+}
